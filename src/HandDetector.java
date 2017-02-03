@@ -17,14 +17,14 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 public class HandDetector {
     private static final int IMG_SCALE = 2;  // scaling applied to webcam image
 
-    private static final float SMALLEST_AREA = 600.0f;    // was 100.0f;
+    private static final float SMALLEST_AREA = 10.0f;    // was 100.0f;
     // ignore smaller contour areas
 
     private static final int MAX_POINTS = 20;   // max number of points stored in an array
 
     // used for simiplifying the defects list
-    private static final int MIN_FINGER_DEPTH = 20;
-    private static final int MAX_FINGER_ANGLE = 60;   // degrees
+    private static final int MIN_FINGER_DEPTH = 2;
+    private static final int MAX_FINGER_ANGLE = 120;   // degrees
 
     // angle ranges of thumb and index finger of the left hand relative to its COG
     private static final int MIN_THUMB = 120;
@@ -89,16 +89,19 @@ public class HandDetector {
             BufferedReader in = new BufferedReader(new FileReader(fnm));
             String line = in.readLine();   // get hues
             String[] toks = line.split("\\s+");
+            System.out.println("toks[0] = " + toks[0] + "\ttoks[1] = " + toks[1] + "\ttoks[2] = " + toks[2]);
             hueLower = Integer.parseInt(toks[1]);
             hueUpper = Integer.parseInt(toks[2]);
 
             line = in.readLine();   // get saturations
             toks = line.split("\\s+");
+            System.out.println("toks[0] = " + toks[0] + "\ttoks[1] = " + toks[1] + "\ttoks[2] = " + toks[2]);
             satLower = Integer.parseInt(toks[1]);
             satUpper = Integer.parseInt(toks[2]);
 
             line = in.readLine();   // get brightnesses
             toks = line.split("\\s+");
+            System.out.println("toks[0] = " + toks[0] + "\ttoks[1] = " + toks[1] + "\ttoks[2] = " + toks[2]);
             briLower = Integer.parseInt(toks[1]);
             briUpper = Integer.parseInt(toks[2]);
 
@@ -126,8 +129,8 @@ public class HandDetector {
         }
         extractContourInfo(bigContour, IMG_SCALE); // find the COG and angle to horizontal of the contour
         findFingerTips(bigContour, IMG_SCALE); // detect the fingertips position in the contour
-        nameFingers(cogPt, contourAxisAngle, fingerTips); // end of update()
-    }
+        nameFingers(cogPt, contourAxisAngle, fingerTips);
+    } // end of update()
 
     private CvSeq findBiggestContour(IplImage imgThreshed) {
         CvSeq bigContour = null;
@@ -141,7 +144,8 @@ public class HandDetector {
         // find the largest contour in the list based on bounded box size
         float maxArea = SMALLEST_AREA;
         CvBox2D maxBox = null;
-        while (!contours.isNull()) {
+
+        while (!(contours == null)) {
             if (contours.elem_size() > 0) {
                 CvBox2D box = cvMinAreaRect2(contours, contourStorage);
                 if (!box.isNull()) {
@@ -429,6 +433,9 @@ public class HandDetector {
 
     public void draw(Graphics2D g2d) {
         // draw information about the finger tips and the hand COG
+
+        int ulX, ulY;
+
         if (fingerTips.size() == 0) {
             return;
         }
@@ -438,10 +445,21 @@ public class HandDetector {
         g2d.setPaint(Color.YELLOW);
         g2d.setStroke(new BasicStroke(4));  // thick yellow pen
 
+        ulX = fingerTips.get(0).x;
+        ulY = fingerTips.get(0).y;
+
         // label the finger tips in red or green, and draw COG lines to named tips
         g2d.setFont(msgFont);
         for (int i = 0; i < fingerTips.size(); i++) {
             Point pt = fingerTips.get(i);
+
+            if (pt.x < ulX) {
+                ulX = pt.x;
+            }
+            if (pt.y < ulY) {
+                ulY = pt.y;
+            }
+
             if (namedFingers.get(i) == FingerName.UNKNOWN) {
                 g2d.setPaint(Color.RED);   // unnamed finger tip is red
                 g2d.drawOval(pt.x - 8, pt.y - 8, 16, 16);
@@ -456,8 +474,11 @@ public class HandDetector {
             }
         }
 
+        System.out.println("ulX = " + ulX + "\tulY = " + ulY);
+
         // draw COG
         g2d.setPaint(Color.GREEN);
         g2d.fillOval(cogPt.x - 8, cogPt.y - 8, 16, 16);
+        //g2d.drawRect(ulX, ulY, 160, 160);
     }  // end of draw()
 }

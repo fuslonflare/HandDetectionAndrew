@@ -27,7 +27,7 @@ public class HandPanel extends JPanel implements Runnable {
 
     private static final int DELAY = 200;  // time (ms) between redraws of the panel
 
-    private static final int CAMERA_ID = 0;
+    private static final int CAMERA_ID = 1;
 
 
     private IplImage snapIm = null;
@@ -120,8 +120,9 @@ public class HandPanel extends JPanel implements Runnable {
         IplImage im = null;
         try {
             OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
-            im = converter.convert(grabber.grab());
+            im = converter.convert(grabber.grabFrame());
         } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("Problem grabbing image for camera " + ID);
         }
         return im;
